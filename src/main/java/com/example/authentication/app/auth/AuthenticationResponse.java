@@ -1,4 +1,4 @@
-package com.example.authentication.app.controller.user;
+package com.example.authentication.app.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,5 +1,8 @@
-package com.example.authentication.app.controller.user;
+package com.example.authentication.app.auth;
 
+import java.sql.SQLIntegrityConstraintViolationException;
+
+import org.hibernate.PropertyValueException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -13,7 +16,6 @@ import com.example.authentication.app.security.JwtService;
 
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
-import lombok.var;
 
 @Service
 @RequiredArgsConstructor
@@ -25,17 +27,18 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
     
-    public AuthenticationResponse register(RegisterRequest request) {
-         var user = User.builder()
+    public AuthenticationResponse register(RegisterRequest request) throws SQLIntegrityConstraintViolationException ,
+            PropertyValueException {
+        User user = User.builder()
             .firstName(request.getFirstName())
             .lastName(request.getLastName())
             .email(request.getEmail())
             .password(passwordEncoder.encode(request.getPassword()))
-            .role(Role.USER)
+            .roles(Role.USER.toString() )
             .build();
 
         userRepository.save(user);
-        var jwtToken = jwtService.generateToken(user);
+        String jwtToken = jwtService.generateToken(user);
 
         return AuthenticationResponse.builder().token(jwtToken).build();
     }
@@ -48,10 +51,10 @@ public class AuthenticationService {
             throw new JwtException("Authentication failed: " + e.getMessage());
         }
 
-        var user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new JwtException("User not found after authentication"));
 
-        var jwtToken = jwtService.generateToken(user);
+        String jwtToken = jwtService.generateToken(user);
 
         return AuthenticationResponse.builder().token(jwtToken).build();
     }

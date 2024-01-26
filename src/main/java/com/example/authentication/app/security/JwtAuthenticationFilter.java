@@ -1,7 +1,6 @@
 package com.example.authentication.app.security;
 
 import java.io.IOException;
-
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,26 +26,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
+    // Define the endpoints that should be excluded from JWT authentication
+
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
-        
+
+        // Check if the request is for a permitted endpoint
+        if (isPermittedEndpoint(request.getRequestURI())) {
+            // If it is a permitted endpoint, skip JWT authentication
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
 
-        System.out.println("the Authorization header : "+authHeader);
+        System.out.println(authHeader);
         final String token;
         final String userEmail;
 
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             // No authentication in header
-            CustomExceptionHandler.handleAuthenticationError(response, "JWT token is missing or not in the expected format");
+            CustomExceptionHandler.handleAuthenticationError(response,
+                    "JWT is missing or not in the expected format");
+        //  filterChain.doFilter(request, response);
+
             return;
         }
 
         token = authHeader.substring(7);
-        System.out.println("token from the header : "+token);
+        System.out.println("token from the header : " + token);
         try {
             userEmail = jwtService.extractUsername(token);
             System.out.println("username form the header from the jwtfilter: " + userEmail);
@@ -70,11 +80,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         }
 
-
-
         filterChain.doFilter(request, response);
     }
 
-
-
+    private boolean isPermittedEndpoint(String requestURI) {
+        System.out.println(requestURI);
+        return requestURI.startsWith("/api/auth/") || requestURI.startsWith("/swagger-ui",0) || requestURI.startsWith("/v3/api-docs",0);
+    }
 }
