@@ -2,20 +2,22 @@ package com.example.authentication.app.entity.user;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,6 +33,7 @@ import lombok.NoArgsConstructor;
     uniqueConstraints = @UniqueConstraint(columnNames = "email")
 )
 public class User implements UserDetails{
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id" , length = 45)
@@ -46,10 +49,18 @@ public class User implements UserDetails{
     private String email;
 
     @Column(name = "password")
+    @JsonProperty(access = Access.WRITE_ONLY)
     private String password;
 
     @Column(name = "roles", nullable = false )
     private String roles;
+
+    @Column(name = "enabled")
+    private Boolean enabled;
+
+    @OneToOne(mappedBy = "user")
+    private Confirmation confirmation;
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -82,8 +93,9 @@ public class User implements UserDetails{
 
     @Override
     public boolean isEnabled() {
-        return true;
-      
+        return enabled;
     }
+
+
 
 }

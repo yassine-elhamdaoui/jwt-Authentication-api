@@ -12,6 +12,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.example.authentication.app.exception.CustomExceptionHandler;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -33,9 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Check if the request is for a permitted endpoint
         if (isPermittedEndpoint(request.getRequestURI())) {
-            // If it is a permitted endpoint, skip JWT authentication
             filterChain.doFilter(request, response);
             return;
         }
@@ -59,7 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         System.out.println("token from the header : " + token);
         try {
             userEmail = jwtService.extractUsername(token);
-            System.out.println("username form the header from the jwtfilter: " + userEmail);
+            System.out.println("username form the header from the jwtFilter: " + userEmail);
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
@@ -74,8 +73,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 }
             }
-        } catch (MalformedJwtException ex) {
-            CustomExceptionHandler.handleAuthenticationError(response, "Invalid JWT token");
+        } catch (MalformedJwtException | ExpiredJwtException e) {
+            if (e instanceof MalformedJwtException) {
+                CustomExceptionHandler.handleAuthenticationError(response, "Invalid JWT token");
+            }
+            CustomExceptionHandler.handleAuthenticationError(response, "JWT token expired");
+
             return;
 
         }
@@ -85,6 +88,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isPermittedEndpoint(String requestURI) {
         System.out.println(requestURI);
-        return requestURI.startsWith("/api/auth/") || requestURI.startsWith("/swagger-ui",0) || requestURI.startsWith("/v3/api-docs",0);
+        return requestURI.startsWith("/api/auth/") || requestURI.startsWith("/swagger-ui",0) || requestURI.startsWith("/v3/api-docs",0 );
     }
 }
